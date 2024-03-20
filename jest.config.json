@@ -1,0 +1,11 @@
+{
+  "transform": {},
+  "clearMocks": true,
+  "coverageDirectory": "coverage",
+  "testEnvironment": "node",
+  "automock": false,
+  "resetMocks": false,
+  "setupFiles": [
+    "./setupJest.js"
+  ]
+}
