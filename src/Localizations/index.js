@@ -1,31 +1,50 @@
 import fetch from "cross-fetch";
 
-export const TOKEN_ERROR_MESSAGE = "An api token is required";
+export const TOKEN_ERROR_MESSAGE = "token parameter is missing or malformed";
 export const PROJECT_IDS_ERROR_MESSAGE = "projectIds parameter is missing or malformed";
+export const KEEP_ALIVE_ERROR_MESSAGE = "keepAlive parameter must be a number or undefined";
+export const DEFAULT_KEEP_ALIVE = 1000 * 1000 * 60 * 10;
+
+const removeDuplicates = arr => [...new Set(arr)];
 
 export class Localizations {
   api_token;
   projectIds;
   localizations = {};
   keepAlive;
-  idToLanguagesMap;
+  idToLanguagesMap = {};
   
   constructor({token, projectIds, keepAlive}) {
     const isMissingToken = !token || typeof token !== "string";
     if (isMissingToken) throw new TypeError(TOKEN_ERROR_MESSAGE);
-    if (!projectIds || !projectIds.length || !Array.isArray(projectIds)) {
+
+    const isProjectIdsMalformed = !projectIds || !projectIds.length || !Array.isArray(projectIds);
+    if (isProjectIdsMalformed) {
       throw new TypeError(PROJECT_IDS_ERROR_MESSAGE);
+    }
+
+    const isKeepAliveMalformed = keepAlive && (typeof keepAlive !== "number");
+    if (isKeepAliveMalformed) {
+      throw new TypeError(KEEP_ALIVE_ERROR_MESSAGE);
     }
 
     this.api_token = token;
     this.projectIds = projectIds;
-    const tenMins = 1000 * 1000 * 60 * 10;
-    this.keepAlive = keepAlive ? keepAlive : tenMins;
+    this.keepAlive = keepAlive ? keepAlive : DEFAULT_KEEP_ALIVE;
   }
 
   async init() {
-    const languages = await this.getLanguages();
-    this.idToLanguagesMap = this.makeIdToLanguagesMap(languages);
+    let languages;
+
+    try {
+      languages = await this.getLanguages();
+
+    } catch (err) {
+      console.log(err);
+      return;
+    }
+
+    this.idToLanguagesMap = this.makeIdToLanguagesMap(languages, this.projectIds);
     await this.fetchLocalizations();
   }
 
@@ -38,14 +57,20 @@ export class Localizations {
     let responses = fetchOptions.map(options => fetch("https://api.poeditor.com/v2/languages/list", options));
     responses = await Promise.all(responses);
 
-    let languages = responses.map(response => response.json());
-    languages = await Promise.all(languages);
+    let parsedResponses = responses.map(response => response.json());
+    parsedResponses = await Promise.all(parsedResponses);
 
-    return languages;
+    parsedResponses.forEach((response, index) => {
+      if (response.response.status !== "success") {
+        throw new Error(`${response.response.message}. On project id: ${this.projectIds[index]}.`)
+      }
+    });
+
+    return parsedResponses;
   }
 
-  makeIdToLanguagesMap(languages) {
-    return this.projectIds.reduce((idMap, id, index) => ({
+  makeIdToLanguagesMap(languages, projectIds) {
+    return projectIds.reduce((idMap, id, index) => ({
       ...idMap,
       [id]: languages[index].result.languages.map(language => language.code)
     }), {});
@@ -86,10 +111,23 @@ export class Localizations {
     }, this.keepAlive)
   }
 
-  getLocalizations(id, language) {
+  getLocalizations(id, languages) {
     if (!id || !this.idToLanguagesMap[id]) return {};
-    if (!language) return this.localizations[id];
-    return this.localizations[id]?.[language] ?? {};
+    if (!languages || !Array.isArray(languages) || !languages.length ) return this.localizations[id];
+
+    languages = removeDuplicates(languages);
+
+    return languages.reduce((localizations, language) => ({
+      ...localizations,
+      [language]: this.localizations[id]?.[language] ?? {}
+    }), {});
+  }
+
+  getLocalizationsByLang(id, language) {
+    if (!id || !this.idToLanguagesMap[id]) return {};
+    if (!language || typeof language !== "string" ) return {};
+
+    return this.localizations[id][language] ?? {};
   }
 
   normalizeResponseData(responseData, languages) {

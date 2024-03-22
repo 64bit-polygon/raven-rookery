@@ -4,8 +4,5 @@
   "coverageDirectory": "coverage",
   "testEnvironment": "node",
   "automock": false,
-  "resetMocks": false,
-  "setupFiles": [
-    "./setupJest.js"
-  ]
+  "resetMocks": false
 }

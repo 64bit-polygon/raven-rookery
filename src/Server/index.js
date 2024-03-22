@@ -9,21 +9,21 @@ export const createStartServer = ({
   requestType,
   getLocalizations
 }) => {
-  endpoint = endpoint ?? "/localizations";
+  if (endpoint && endpoint[0] === "/") {
+    endpoint = endpoint.substring(1);
+  }
+  endpoint = `/${endpoint ?? "localizations"}`;
   port = port ?? 3000;
   languagesKey = languagesKey ?? "languages";
   projectIdKey = projectIdKey ?? "projectId";
   dataKey = dataKey ?? "data";
-  requestType === "POST" ? "POST" : "GET";
+  requestType = requestType === "POST" ? "POST" : "GET";
 
   const makeResponse = query => {
     const id = query[projectIdKey];
     const languages = query[languagesKey];
 
-    return languages.reduce((response, language) => ({
-      ...response,
-      [language]: getLocalizations(id, language)
-    }), {});
+    return getLocalizations(id, languages);
   }
 
   const makeResponses = queries => {
@@ -33,10 +33,8 @@ export const createStartServer = ({
     }), {});
   }
 
-  let app;
-
   const startServer = () => {
-    app = express();
+    const app = express();
     app.use(express.json());
 
     if (requestType === "GET") {
@@ -47,7 +45,7 @@ export const createStartServer = ({
           const response = Array.isArray(query) ? makeResponses(query) : makeResponse(query);
           res.json(response);
         } catch (err) {
-          console.error(err)
+          console.error(err?.message)
           res.json({});
         }
       });
@@ -60,19 +58,23 @@ export const createStartServer = ({
           const response = Array.isArray(queries) ? makeResponses(queries) : makeResponse(req.body);
           res.json(response);
         } catch (err) {
-          console.log(err);
+          console.log(err?.message);
           res.json({});
         }
       });
     }
 
-    app.listen(port, () => {
+    const server = app.listen(port, () => {
       console.log(`Server is running on port ${port}`);
     });
+
+    return {
+      app,
+      server
+    }
   }
 
   const killServer = () => {
-    if (!app) return;
     console.log(`Server shutting down on port ${port}`);
     process.exit();
   }

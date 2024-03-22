@@ -10,7 +10,7 @@ const initRookery = async ({
   const Cache = new Localizations({token, projectIds, keepAlive});
   await Cache.init();
 
-  const localize = (id, language) => Cache.getLocalizations(id, language);
+  const localize = (id, languages) => Cache.getLocalizations(id, languages);
 
   const { startServer, killServer } = createStartServer({
     ...serverConfig,

@@ -1,7 +1,7 @@
 {
   "name": "raven-rookery",
   "version": "1.0.0",
-  "description": "",
+  "description": "raven-rookery is a backend tool to get localizations from the popular POEditor localization service. raven-rookery gets and stores your localizations in memory, refreshing them at a given interval. It also provides an optional customizable API.",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
@@ -19,7 +19,6 @@
     "@babel/preset-env": "^7.24.1",
     "babel-jest": "^29.7.0",
     "jest": "^29.7.0",
-    "jest-fetch-mock": "^3.0.3",
     "supertest": "^6.3.4"
   },
   "dependencies": {
