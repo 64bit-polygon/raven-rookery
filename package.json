@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "raven-rookery is a backend tool to get localizations from the popular POEditor localization service. raven-rookery gets and stores your localizations in memory, refreshing them at a given interval. It also provides an optional customizable API.",
   "main": "src/index.js",
+  "homepage": "https://github.com/64bit-polygon/raven-rookery",
+  "bugs": {
+    "url": "https://github.com/64bit-polygon/raven-rookery/issues"
+  },
   "type": "module",
   "scripts": {
     "tests": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" npx jest"
